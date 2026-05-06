@@ -12,6 +12,7 @@ type OrderRepository interface {
 	FindByOrderNo(orderNo string) (*domain.Order, error)
 	FindByUserID(userID uint64, page, pageSize int) ([]domain.Order, int64, error)
 	UpdateStatus(id uint64, status string) error
+	UpdateStatusFromPending(id uint64, status string) (bool, error)
 	ListExpired() ([]domain.Order, error)
 }
 
@@ -66,6 +67,20 @@ func (r *orderRepository) UpdateStatus(id uint64, status string) error {
 		updates["paid_at"] = gorm.Expr("CURRENT_TIMESTAMP")
 	}
 	return r.db.Model(&domain.Order{}).Where("id = ?", id).Updates(updates).Error
+}
+
+func (r *orderRepository) UpdateStatusFromPending(id uint64, status string) (bool, error) {
+	updates := map[string]interface{}{"status": status}
+	if status == "PAID" {
+		updates["paid_at"] = gorm.Expr("CURRENT_TIMESTAMP")
+	}
+	res := r.db.Model(&domain.Order{}).
+		Where("id = ? AND status = ?", id, "PENDING").
+		Updates(updates)
+	if res.Error != nil {
+		return false, res.Error
+	}
+	return res.RowsAffected == 1, nil
 }
 
 func (r *orderRepository) ListExpired() ([]domain.Order, error) {

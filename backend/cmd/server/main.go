@@ -77,7 +77,7 @@ func main() {
 	activitySvc := service.NewActivityService(activityRepo, stockEngine)
 	notifSvc := service.NewNotificationService(notifRepo)
 	enrollmentSvc := service.NewEnrollmentService(db, stockEngine, kafkaWriter, enrollmentRepo, activityRepo, orderRepo)
-	orderSvc := service.NewOrderService(orderRepo, activityRepo, stockEngine)
+	orderSvc := service.NewOrderService(orderRepo, activityRepo, stockEngine, notifSvc)
 	behaviorSvc := service.NewBehaviorService(behaviorRepo)
 	recommendSvc := service.NewRecommendationService(recommendRepo, cfg.Scoring, 5*time.Minute)
 

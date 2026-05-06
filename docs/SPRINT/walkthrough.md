@@ -216,6 +216,21 @@ docker compose up -d
   - `backend/internal/service/stock_lua_test.go`
   - `backend/internal/handler/activity_handler_test.go`
   - `backend/internal/handler/enrollment_handler_test.go`
+
+## 2026-05-06 · 后端闭环收口（Batch 2）
+
+### 变更概览
+- 订单状态更新改为乐观锁：新增 `UpdateStatusFromPending`，`Pay` 与 `ScanExpired` 使用条件更新避免重复回补。
+- 订单过期扫描接入 `ORDER_EXPIRE` 通知，并补齐活动标题查询。
+
+### Diff 思路
+- 所有 `PENDING -> PAID/CLOSED` 的状态变更都通过一次条件更新完成，避免并发 TOCTOU。
+- 只有成功关闭订单时才回补库存并发送通知，防止重复消息影响一致性。
+
+### 验证结果
+- 通过：`go test`（选定用例）
+  - `backend/internal/service/order_service_flow_test.go`
+  - `backend/internal/service/order_service_test.go`
   - 新增 §9 常见问题排查（10 类典型问题及解决步骤）。
 
 ### Diff 思路
