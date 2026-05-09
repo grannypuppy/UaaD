@@ -128,6 +128,10 @@ func (s *stubActivityRepoForCancel) IncrementStock(activityID uint64) error {
 	return nil
 }
 
+func (s *stubActivityRepoForCancel) IncrementViewCount(activityID uint64) error {
+	return nil
+}
+
 type stubStockEngineForCancel struct {
 	rollbackCalled int
 }

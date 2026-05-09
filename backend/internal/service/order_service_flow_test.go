@@ -95,6 +95,10 @@ func (s *stubActivityRepo) IncrementStock(activityID uint64) error {
 	return nil
 }
 
+func (s *stubActivityRepo) IncrementViewCount(activityID uint64) error {
+	return nil
+}
+
 type stubStockEngine struct {
 	rollbackCalled int
 }
