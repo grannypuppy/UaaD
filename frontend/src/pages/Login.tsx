@@ -130,6 +130,9 @@ const LoginPage = () => {
 
   const handleLogin = async (e: React.FormEvent) => {
     e.preventDefault();
+    if (loading) {
+      return;
+    }
     setError('');
 
     const { normalizedPhone, isValid } = validateForm();
@@ -206,6 +209,9 @@ const LoginPage = () => {
                 type="text"
                 required
                 disabled={loading}
+                inputMode="numeric"
+                autoComplete="tel"
+                maxLength={11}
                 value={phone}
                 onChange={(e) => handlePhoneChange(e.target.value)}
                 aria-invalid={!!fieldErrors.phone}
@@ -236,6 +242,7 @@ const LoginPage = () => {
                 type="password"
                 required
                 disabled={loading}
+                autoComplete="current-password"
                 value={password}
                 onChange={(e) => handlePasswordChange(e.target.value)}
                 aria-invalid={!!fieldErrors.password}

@@ -93,6 +93,47 @@ export default function MerchantActivitiesPage() {
     return t('merchant.publishUnavailable');
   };
 
+  const handlePublish = async (item: ActivityListItem) => {
+    if (!canPublish(item.status) || publishingId !== null) {
+      return;
+    }
+
+    setPublishingId(item.id);
+    setNotice(null);
+
+    try {
+      const result = await publishMerchantActivity(item.id);
+      setItems((current) =>
+        current.map((currentItem) =>
+          currentItem.id === item.id
+            ? {
+                ...currentItem,
+                status: result.status,
+                stockRemaining: result.stockInCache ?? currentItem.stockRemaining,
+              }
+            : currentItem,
+        ),
+      );
+      setNotice({
+        tone: 'success',
+        title: t('merchant.publishSuccessTitle'),
+        message: result.message || t('merchant.publishSuccess'),
+      });
+      void load();
+    } catch (error) {
+      setNotice({
+        tone: 'error',
+        title: t('merchant.publishFailedTitle'),
+        message: resolveApiErrorMessage(error, {
+          fallback: t('merchant.publishFailed'),
+          networkFallback: t('merchant.networkError'),
+        }),
+      });
+    } finally {
+      setPublishingId(null);
+    }
+  };
+
   return (
     <div className="space-y-5">
       <MerchantPageHeader
@@ -177,7 +218,43 @@ export default function MerchantActivitiesPage() {
             />
           </div>
         ) : (
-          <div className="overflow-x-auto">
+          <>
+            <div className="space-y-4 p-4 md:hidden">
+            {items.map((item) => (
+              <article key={item.id} className="rounded-2xl border border-rose-100 bg-[#fffaf7] p-4">
+                <div className="flex items-start justify-between gap-3">
+                  <div className="min-w-0">
+                    <p className="truncate text-sm font-semibold text-slate-900">{item.title}</p>
+                    <p className="mt-1 text-xs text-slate-500">{item.location}</p>
+                  </div>
+                  <StatusChip status={item.status} theme="soft" />
+                </div>
+                <div className="mt-3 grid grid-cols-2 gap-3 text-xs text-slate-600">
+                  <p>{t('merchant.table.price')}: {formatCurrency(item.price)}</p>
+                  <p>{t('merchant.table.enroll')}: {item.enrollCount.toLocaleString()}</p>
+                </div>
+                <div className="mt-4 flex flex-wrap gap-2">
+                  <Link
+                    to={`/merchant/activities/${item.id}/edit`}
+                    className="inline-flex items-center gap-1 rounded-full border border-rose-100 bg-white px-4 py-2 text-xs font-semibold text-slate-600 transition hover:border-rose-200 hover:text-rose-600"
+                  >
+                    <PenLine size={12} />
+                    {t('merchant.edit')}
+                  </Link>
+                  <button
+                    type="button"
+                    disabled={!canPublish(item.status) || publishingId !== null}
+                    onClick={() => void handlePublish(item)}
+                    className="inline-flex items-center gap-1 rounded-full bg-rose-500 px-4 py-2 text-xs font-semibold text-white transition hover:bg-rose-600 disabled:cursor-not-allowed disabled:bg-slate-200 disabled:text-slate-400"
+                  >
+                    <Rocket size={12} />
+                    {getPublishLabel(item)}
+                  </button>
+                </div>
+              </article>
+            ))}
+            </div>
+            <div className="hidden overflow-x-auto md:block">
             <table className="min-w-full text-left text-sm">
               <thead className="bg-[#fff8f3] text-slate-400">
                 <tr>
@@ -211,44 +288,8 @@ export default function MerchantActivitiesPage() {
                         </Link>
                         <button
                           type="button"
-                          disabled={!canPublish(item.status) || publishingId === item.id}
-                          onClick={async () => {
-                            setPublishingId(item.id);
-                            setNotice(null);
-
-                            try {
-                              const result = await publishMerchantActivity(item.id);
-                              setItems((current) =>
-                                current.map((currentItem) =>
-                                  currentItem.id === item.id
-                                    ? {
-                                        ...currentItem,
-                                        status: result.status,
-                                        stockRemaining:
-                                          result.stockInCache ?? currentItem.stockRemaining,
-                                      }
-                                    : currentItem,
-                                ),
-                              );
-                              setNotice({
-                                tone: 'success',
-                                title: t('merchant.publishSuccessTitle'),
-                                message: result.message || t('merchant.publishSuccess'),
-                              });
-                              void load();
-                            } catch (error) {
-                              setNotice({
-                                tone: 'error',
-                                title: t('merchant.publishFailedTitle'),
-                                message: resolveApiErrorMessage(error, {
-                                  fallback: t('merchant.publishFailed'),
-                                  networkFallback: t('merchant.networkError'),
-                                }),
-                              });
-                            } finally {
-                              setPublishingId(null);
-                            }
-                          }}
+                          disabled={!canPublish(item.status) || publishingId !== null}
+                          onClick={() => void handlePublish(item)}
                           className="inline-flex items-center gap-1 rounded-full bg-rose-500 px-4 py-2 text-xs font-semibold text-white transition hover:bg-rose-600 disabled:cursor-not-allowed disabled:bg-slate-200 disabled:text-slate-400"
                         >
                           <Rocket size={12} />
@@ -260,7 +301,8 @@ export default function MerchantActivitiesPage() {
                 ))}
               </tbody>
             </table>
-          </div>
+            </div>
+          </>
         )}
       </section>
     </div>

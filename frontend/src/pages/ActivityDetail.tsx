@@ -12,7 +12,7 @@ import {
   Users,
   type LucideIcon,
 } from 'lucide-react';
-import { useEffect, useMemo, useState, type ReactNode } from 'react';
+import { useEffect, useMemo, useRef, useState, type ReactNode } from 'react';
 import { Link, useLocation, useNavigate, useParams } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
 import ActivityCountdown from '../components/ActivityCountdown';
@@ -22,6 +22,7 @@ import {
   findOrderByOrderNo,
   getActivityDetail,
   getActivityStock,
+  trackBehavior,
 } from '../api/endpoints';
 import { useAuth } from '../context/AuthContext';
 import type { ActivityDetail as ActivityDetailModel, ActivityStockSnapshot } from '../types';
@@ -293,6 +294,7 @@ export default function ActivityDetailPage() {
     tone: 'success' | 'error';
     message: string;
   } | null>(null);
+  const reportedViewsRef = useRef<Set<string>>(new Set());
 
   useEffect(() => {
     if (!hasValidActivityId) {
@@ -361,6 +363,30 @@ export default function ActivityDetailPage() {
   useEffect(() => {
     setIsReminderSet(hasActivityReminder(session?.userId ?? undefined, activityId));
   }, [activityId, session?.userId]);
+
+  useEffect(() => {
+    if (viewState !== 'success' || !activity || !isAuthenticated || !session?.userId) {
+      return;
+    }
+
+    const reportKey = `${session.userId}:${activity.id}`;
+    if (reportedViewsRef.current.has(reportKey)) {
+      return;
+    }
+
+    reportedViewsRef.current.add(reportKey);
+    trackBehavior(
+      {
+        activityId: activity.id,
+        behaviorType: 'VIEW',
+        detail: {
+          source: 'activity_detail_page',
+          path: location.pathname,
+        },
+      },
+      { immediate: true, timeoutMs: 1000 },
+    );
+  }, [activity, isAuthenticated, location.pathname, session?.userId, viewState]);
 
   const currentStock = activity
     ? Math.max(0, stockSnapshot?.stockRemaining ?? activity.stockRemaining)
