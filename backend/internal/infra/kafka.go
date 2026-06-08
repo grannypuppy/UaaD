@@ -15,7 +15,8 @@ func NewKafkaWriter(cfg *config.Config) *kafka.Writer {
 		Balancer:     &kafka.LeastBytes{},
 		BatchSize:    100,
 		BatchTimeout: 10 * time.Millisecond,
-		Async:        true,
+		WriteTimeout: 5 * time.Second,
+		Async:        false,
 	}
 }
 
